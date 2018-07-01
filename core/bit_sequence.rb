@@ -1,5 +1,9 @@
 require_relative 'bit/bit.rb'
-require_relative 'operator.rb'
+require_relative 'operator/helper.rb'
+require_relative 'operator/native.rb'
+require_relative 'operator/logical_shift.rb'
+require_relative 'operator/arithmetic_shift.rb'
+require_relative 'operator/arithmetic.rb'
 require_relative 'errors.rb'
 require 'forwardable'
 
@@ -7,9 +11,11 @@ module Bitwiser
   module BitSequence # unsigned
     class Base
       extend Forwardable
-      include OperationHelper
-      include NativeOperator
-      include LogicalOperator
+      include Operator::Helper
+      include Operator::Native
+      include Operator::LogicalShift
+      include Operator::ArithmeticShift
+      include Operator::Arithmetic
 
       attr_reader :sequence, :size
       def_delegators :sequence, :map, :each, :inject
@@ -36,6 +42,43 @@ module Bitwiser
         map(&:value)
       end
       alias_method :to_a, :values
+
+      def type_of?(other)
+        instance_of?(other.class) && size == other.size
+      end
+
+      def positive?
+        !(negative? || zero?)
+      end
+
+      def zero?
+        values.all?(&:zero?)
+      end
+
+      def negative?
+        false
+      end
+
+      def number_part # == sequence for unsigned sequences
+        sequence - [@sign_bit]
+      end
+
+      def minimum_negative_number? # false with unsigned sequences
+        negative? && number_part.all?(:zero?)
+      end
+
+      def dup
+        new_obj = self.class.new sequence, size
+        sequence.zip(new_obj.sequence).each do |bit, new_bit|
+          new_bit.send :carry! if bit.carry?
+          new_bit.send :borrow! if bit.borrow?
+        end
+        new_obj
+      end
+
+      def split(n = (size/2.0).to_i)
+        [self.class.new(sequence.slice(0..n-1), n), self.class.new(sequence.slice(n..-1), size - n)]
+      end
 
       private
 

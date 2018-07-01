@@ -9,7 +9,7 @@ module Bitwiser
       0 => false,
     }
 
-    def initialize(initial_value=0, carry: 0, borrow: 0)
+    def initialize(initial_value=0, carry: false, borrow: false)
       @bool_value = self.class.to_bool initial_value
       @carry      = carry
       @borrow     = borrow
@@ -29,14 +29,19 @@ module Bitwiser
       bool_value
     end
 
-    def carry!
-      @carry  = 1
-      @borrow = 0
+    def carry?
+      !!carry
     end
 
-    def borrow!
-      @carry  = 0
-      @borrow = 1
+    def borrow?
+      !!borrow
+    end
+
+    def flag_states
+      {
+        carry: carry?,
+        borrow: borrow?,
+      }
     end
 
     class << self
@@ -50,7 +55,7 @@ module Bitwiser
         bool_value
       end
 
-      def build_with_bool(bool_value, carry: 0, borrow: 0)
+      def build_with_bool(bool_value, carry: false, borrow: false)
         new to_value(bool_value), carry: carry, borrow: borrow
       end
     end
@@ -58,5 +63,15 @@ module Bitwiser
     private
 
     attr_reader :bool_value, :carry, :borrow
+
+    def carry!
+      @carry  = true
+      @borrow = false
+    end
+
+    def borrow!
+      @carry  = false
+      @borrow = true
+    end
   end
 end
